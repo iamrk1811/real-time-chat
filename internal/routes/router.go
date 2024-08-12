@@ -6,27 +6,28 @@ import (
 )
 
 type Services struct {
-	User services.User
+	Client services.Client
+	Auth   services.Auth
 }
 
 type Routes struct {
 	services Services
 }
 
-func NewRoutes(services Services) *Routes{
+func NewRoutes(services Services) *Routes {
 	return &Routes{
 		services: services,
 	}
 }
 
-
 func (r *Routes) NewRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	api := router.PathPrefix("/api").Subrouter()
+	NewAuthRoutes(api, r.services.Auth)
 
-	NewUserRoutes(api, r.services.User)
-	NewChatRoutes(api)
+	ws := router.PathPrefix("/ws").Subrouter()
+	NewClientRoutes(ws, r.services.Client)
 
 	return router
 }
