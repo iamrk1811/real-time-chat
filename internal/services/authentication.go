@@ -2,9 +2,13 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/iamrk1811/real-time-chat/internal/repo"
+	"github.com/iamrk1811/real-time-chat/utils"
 )
 
 type Auth interface {
@@ -27,6 +31,9 @@ type UserCreds struct {
 }
 
 func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("auth")
+	fmt.Println(c, err)
+
 	var creds UserCreds
 
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
@@ -40,9 +47,22 @@ func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// sessionID := uuid.New()
-	// expireAt := time.Now().Add(24 * )
-	// expireAt
+	sessionID := uuid.New().String()
 
-	// u.repo.SaveSession(sessionID, user)
+	expireAt := time.Now().Add(3600 * time.Hour)
+
+	go u.repo.SaveSession(sessionID, user, expireAt)
+
+	cookie := http.Cookie{
+		Name:     "auth",
+		Value:    sessionID,
+		Expires:  expireAt,
+		HttpOnly: false,
+		Secure:   false,
+		Path:     "/",
+	}
+
+	http.SetCookie(w, &cookie)
+
+	utils.WriteResponse(w, http.StatusOK, map[string]string{"auth": sessionID}, nil)
 }

@@ -17,6 +17,9 @@ type Client interface {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func (r *http.Request) bool {
+		return true
+	},
 }
 
 type client struct {
@@ -30,9 +33,18 @@ func NewClientService(repo repo.CRUDRepo) *client {
 }
 
 func (c *client) UserToUserChat(w http.ResponseWriter, r *http.Request) {
+	// cookie, err := r.Cookie("session_id")
+
+	// if err != nil {
+	// 	fmt.Println("error")
+	// 	return
+	// }
+
+	fmt.Println(r.Cookies(), "Got it")
+	// return
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("websocket upgrading fail")
+		log.Println("websocket upgrading fail", err)
 		return
 	}
 	defer conn.Close()
@@ -42,10 +54,9 @@ func (c *client) UserToUserChat(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error reading:", err)
 		}
-		
+
 		if err := conn.WriteMessage(messageType, p); err != nil {
 			fmt.Println("Error writing:", err)
-			return
 		}
 	}
 
