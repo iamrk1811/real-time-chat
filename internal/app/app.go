@@ -6,26 +6,11 @@ import (
 	"time"
 
 	"github.com/iamrk1811/real-time-chat/config"
+	"github.com/iamrk1811/real-time-chat/internal/middleware"
 	"github.com/iamrk1811/real-time-chat/internal/repo"
 	"github.com/iamrk1811/real-time-chat/internal/routes"
 	"github.com/iamrk1811/real-time-chat/internal/services"
 )
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept		, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		// If this is a preflight request, then stop here
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
 
 func Run(config config.Config) {
 	crudRepo := repo.NewCRUDRepo(config)
@@ -35,10 +20,10 @@ func Run(config config.Config) {
 		Client: services.NewClientService(*crudRepo),
 	}
 
-	routes := routes.NewRoutes(services)
+	routes := routes.NewRoutes(services, crudRepo)
 	router := routes.NewRouter()
 
-	handler := corsMiddleware(router)
+	handler := middleware.CorsMiddleware(router)
 
 	server := &http.Server{
 		Addr:         config.Site.Port,

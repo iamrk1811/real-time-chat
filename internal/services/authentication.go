@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/iamrk1811/real-time-chat/config"
 	"github.com/iamrk1811/real-time-chat/internal/repo"
 	"github.com/iamrk1811/real-time-chat/utils"
 )
@@ -41,7 +42,7 @@ func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := u.repo.GetUser(creds.UserName, creds.Password)
+	user := u.repo.GetUser(r.Context(), creds.UserName, creds.Password)
 	if user == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -51,10 +52,10 @@ func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	expireAt := time.Now().Add(3600 * time.Hour)
 
-	go u.repo.SaveSession(sessionID, user, expireAt)
+	go u.repo.SaveSession(r.Context(), sessionID, user, expireAt)
 
 	cookie := http.Cookie{
-		Name:     "auth",
+		Name:     string(config.SessionKey),
 		Value:    sessionID,
 		Expires:  expireAt,
 		HttpOnly: false,
@@ -64,5 +65,5 @@ func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &cookie)
 
-	utils.WriteResponse(w, http.StatusOK, map[string]string{"auth": sessionID}, nil)
+	utils.WriteResponse(w, http.StatusOK, map[string]string{string(config.SessionKey): sessionID}, nil)
 }

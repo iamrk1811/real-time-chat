@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/iamrk1811/real-time-chat/internal/repo"
 	"github.com/iamrk1811/real-time-chat/internal/services"
 )
 
@@ -12,11 +13,13 @@ type Services struct {
 
 type Routes struct {
 	services Services
+	repo     *repo.CRUDRepo
 }
 
-func NewRoutes(services Services) *Routes {
+func NewRoutes(services Services, repo *repo.CRUDRepo) *Routes {
 	return &Routes{
 		services: services,
+		repo:     repo,
 	}
 }
 
@@ -29,5 +32,8 @@ func (r *Routes) NewRouter() *mux.Router {
 	ws := router.PathPrefix("/ws").Subrouter()
 	NewClientRoutes(ws, r.services.Client)
 
+	// api.Handle("/test", middleware.UserProtectionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	fmt.Println("hello")
+	// }), r.repo))
 	return router
 }
