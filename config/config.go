@@ -10,13 +10,14 @@ type Config struct {
 	Site struct {
 		Title        string `mapstructure:"TITLE"`
 		Port         string `mapstructure:"PORT"`
-		ReadTimeout  int `mapstructure:"HTTP_READ_TIMEOUT"`
-		WriteTimeout int `mapstructure:"HTTP_WRITE_TIMEOUT"`
+		ReadTimeout  int    `mapstructure:"HTTP_READ_TIMEOUT"`
+		WriteTimeout int    `mapstructure:"HTTP_WRITE_TIMEOUT"`
 	} `mapstructure:"SITE"`
 
 	DB struct {
 		CONN_URL string `mapstructure:"CONN_URL"`
 	} `mapstructure:"DB"`
+	ProtectedPaths ProtectedPaths
 }
 
 func NewConfig() *Config {
@@ -32,5 +33,6 @@ func NewConfig() *Config {
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatal("error while reading config")
 	}
+	config.ProtectedPaths = *NewProtectedPaths()
 	return &config
 }

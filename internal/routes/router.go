@@ -1,7 +1,11 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
+	"github.com/iamrk1811/real-time-chat/config"
+	"github.com/iamrk1811/real-time-chat/internal/middleware"
 	"github.com/iamrk1811/real-time-chat/internal/repo"
 	"github.com/iamrk1811/real-time-chat/internal/services"
 )
@@ -12,28 +16,32 @@ type Services struct {
 }
 
 type Routes struct {
-	services Services
-	repo     *repo.CRUDRepo
+	Services Services
+	Repo     *repo.CRUDRepo
 }
 
 func NewRoutes(services Services, repo *repo.CRUDRepo) *Routes {
 	return &Routes{
-		services: services,
-		repo:     repo,
+		Services: services,
+		Repo:     repo,
 	}
 }
 
-func (r *Routes) NewRouter() *mux.Router {
+func (r *Routes) NewRouter(config *config.Config) http.Handler {
 	router := mux.NewRouter()
 
 	api := router.PathPrefix("/api").Subrouter()
-	NewAuthRoutes(api, r.services.Auth)
+	NewAuthRoutes(api, r.Services.Auth)
+	NewClientRoutes(api, r.Services.Client, config)
 
 	ws := router.PathPrefix("/ws").Subrouter()
-	NewClientRoutes(ws, r.services.Client)
+	_ = ws
 
 	// api.Handle("/test", middleware.UserProtectionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	// 	fmt.Println("hello")
 	// }), r.repo))
-	return router
+
+	handler := middleware.CorsMiddleware(router)
+	handler = middleware.SessionProtection(handler, r.Repo, config)
+	return handler
 }

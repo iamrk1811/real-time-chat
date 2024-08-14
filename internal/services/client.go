@@ -10,14 +10,14 @@ import (
 )
 
 type Client interface {
-	UserToUserChat(w http.ResponseWriter, r *http.Request)
-	GroupChat(w http.ResponseWriter, r *http.Request)
+	GetChats(w http.ResponseWriter, r *http.Request)
+	GetGroupChats(w http.ResponseWriter, r *http.Request)
 }
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func (r *http.Request) bool {
+	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
@@ -62,6 +62,10 @@ func (c *client) UserToUserChat(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (c *client) GroupChat(w http.ResponseWriter, r *http.Request) {
+func(c *client) GetChats(w http.ResponseWriter, r *http.Request) {
+	
+}
+
+func (c *client) GetGroupChats(w http.ResponseWriter, r *http.Request) {
 
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -52,7 +53,7 @@ func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	expireAt := time.Now().Add(3600 * time.Hour)
 
-	go u.repo.SaveSession(r.Context(), sessionID, user, expireAt)
+	go u.repo.SaveSession(context.Background(), sessionID, user, expireAt)
 
 	cookie := http.Cookie{
 		Name:     string(config.SessionKey),

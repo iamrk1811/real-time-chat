@@ -27,23 +27,30 @@ func CorsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func UserProtectionMiddleware(next http.Handler, repo *repo.CRUDRepo) http.Handler {
+func SessionProtection(next http.Handler, repo *repo.CRUDRepo, conf *config.Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		if conf.ProtectedPaths.Contains(path) {
+			authCookie, err := r.Cookie(string(config.SessionKey))
+			if err != nil {
+				utils.WriteResponse(w, http.StatusUnauthorized, "You don't have access to this resource", nil)
+				return
+			}
 
-		authCookie, err := r.Cookie(string(config.SessionKey))
-		if err != nil {
-			utils.WriteResponse(w, http.StatusUnauthorized, "You don't have access to this resource", nil)
-			return
+			sessionID := authCookie.Value
+			session := repo.FetchUserBySessionID(r.Context(), sessionID)
+			if session == nil {
+				utils.WriteResponse(w, http.StatusUnauthorized, "You don't have access to this resource", nil)
+				return
+			}
+			if session.IsExpired() {
+				utils.WriteResponse(w, http.StatusUnauthorized, "You don't have access to this resource", nil)
+				return
+			}
+			ctx := context.WithValue(r.Context(), config.SessionKey, session)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 
-		sessionID := authCookie.Value
-		session := repo.FetchUserBySessionID(r.Context(), sessionID)
-		if session == nil {
-			utils.WriteResponse(w, http.StatusUnauthorized, "You don't have access to this resource", nil)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), config.SessionKey, session)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
 }
