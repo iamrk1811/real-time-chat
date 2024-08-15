@@ -6,6 +6,13 @@ import (
 	"github.com/iamrk1811/real-time-chat/types"
 )
 
+func (c *CRUDRepo) SaveMessage(sender, receiver, content string) {
+	ctx := context.Background()
+	query := `INSERT INTO messages (sender_id, receiver_id, content) VALUES($1, $2, $3)`
+
+	c.DB.ExecContext(ctx, query, sender, receiver, content)
+}
+
 func (c *CRUDRepo) GetChats(ctx context.Context, from, to string) ([]types.Message, types.MultiError) {
 	var messages []types.Message
 	var mErr types.MultiError

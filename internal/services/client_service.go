@@ -40,7 +40,6 @@ type getChatsPayload struct {
 }
 
 type chatPayload struct {
-	From    string `json:"from"`
 	To      string `json:"to"`
 	Content string `json:"content"`
 }
@@ -67,22 +66,28 @@ func (c *client) Chat(w http.ResponseWriter, r *http.Request) {
 
 func (c *client) handleConn(conn *websocket.Conn, session *types.Session) {
 	c.conns[session.UserID] = conn
-	go c.readMessages(conn)
+
+	go c.readMessages(conn, session)
 }
 
-func (c *client) readMessages(conn *websocket.Conn) {
+func (c *client) readMessages(conn *websocket.Conn, session *types.Session) {
 	for {
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
 			continue
 		}
-		fmt.Println("MSG", string(p))
 		var payload chatPayload
 		if err := json.Unmarshal(p, &payload); err != nil {
 			continue
 		}
+		go c.repo.SaveMessage(session.UserID, payload.To, payload.Content)
+		// does user have a active connection
+		receiverConn, exist := c.conns[payload.To]
+		if !exist {
+			continue
+		}
 
-		if err := c.conns[payload.To].WriteMessage(messageType, p); err != nil {
+		if err := receiverConn.WriteMessage(messageType, p); err != nil {
 			continue
 		}
 	}
