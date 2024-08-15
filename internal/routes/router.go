@@ -37,11 +37,6 @@ func (r *Routes) NewRouter(config *config.Config) http.Handler {
 
 	ws := router.PathPrefix("/ws").Subrouter()
 	clientWSRoutes.NewClientWebSocketRoutes(ws, r.Services.Client, config)
-
-	// api.Handle("/test", middleware.UserProtectionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	fmt.Println("hello")
-	// }), r.repo))
-
 	handler := middleware.CorsMiddleware(router)
 	handler = middleware.SessionProtection(handler, r.Repo, config)
 	return handler

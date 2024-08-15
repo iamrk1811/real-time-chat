@@ -17,7 +17,7 @@ func NewClientWebSocketRoutes(router *mux.Router, service services.Client, confi
 		service: service,
 	}
 	router.HandleFunc("/chat", c.handleChat).Methods("GET")
-	// config.ProtectedPaths.Add("/ws/chat")
+	config.ProtectedPaths.Add("/ws/chat")
 	return c
 }
 
