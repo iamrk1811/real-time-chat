@@ -1,12 +1,14 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 	"github.com/iamrk1811/real-time-chat/internal/repo"
+	"github.com/iamrk1811/real-time-chat/utils"
 )
 
 type Client interface {
@@ -24,6 +26,11 @@ var upgrader = websocket.Upgrader{
 
 type client struct {
 	repo repo.CRUDRepo
+}
+
+type chatPayload struct {
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
 func NewClientService(repo repo.CRUDRepo) *client {
@@ -62,8 +69,20 @@ func (c *client) UserToUserChat(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func(c *client) GetChats(w http.ResponseWriter, r *http.Request) {
-	
+func (c *client) GetChats(w http.ResponseWriter, r *http.Request) {
+	var payload chatPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, nil, err)
+		return
+	}
+
+	chats, mErr := c.repo.GetChats(r.Context(), payload.From, payload.To)
+	if mErr.HasError() {
+		utils.WriteResponse(w, http.StatusInternalServerError, nil, &mErr)
+		return
+	}
+
+	utils.WriteResponse(w, http.StatusOK, chats, nil)
 }
 
 func (c *client) GetGroupChats(w http.ResponseWriter, r *http.Request) {
