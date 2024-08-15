@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -33,9 +32,6 @@ type UserCreds struct {
 }
 
 func (u *auth) Login(w http.ResponseWriter, r *http.Request) {
-	c, err := r.Cookie("auth")
-	fmt.Println(c, err)
-
 	var creds UserCreds
 
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {

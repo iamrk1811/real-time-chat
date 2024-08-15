@@ -16,7 +16,7 @@ func Run(config config.Config) {
 
 	services := routes.Services{
 		Auth:   services.NewAuthService(*crudRepo),
-		Client: services.NewClientService(*crudRepo),
+		Client: services.NewClientService(*crudRepo, config),
 	}
 
 	routes := routes.NewRoutes(services, crudRepo)

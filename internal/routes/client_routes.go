@@ -19,12 +19,9 @@ func NewClientRoutes(router *mux.Router, client services.Client, config *config.
 
 	router.HandleFunc("/user/chats", c.handleChat)
 	config.ProtectedPaths.Add("/api/user/chats")
-	
+
 	router.HandleFunc("/user/chats/group", c.handleGroupChat)
 	config.ProtectedPaths.Add("/api/user/chats/group")
-
-	// router.HandleFunc("/chat", c.handleChat).Methods("GET")
-	// router.HandleFunc("/chat/group", c.handleGroupChat).Methods("GET")
 	return c
 }
 

@@ -49,6 +49,7 @@ func SessionProtection(next http.Handler, repo *repo.CRUDRepo, conf *config.Conf
 			}
 			ctx := context.WithValue(r.Context(), config.SessionKey, session)
 			next.ServeHTTP(w, r.WithContext(ctx))
+			return
 		}
 
 		next.ServeHTTP(w, r)

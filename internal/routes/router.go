@@ -7,6 +7,7 @@ import (
 	"github.com/iamrk1811/real-time-chat/config"
 	"github.com/iamrk1811/real-time-chat/internal/middleware"
 	"github.com/iamrk1811/real-time-chat/internal/repo"
+	clientWSRoutes "github.com/iamrk1811/real-time-chat/internal/routes/ws"
 	"github.com/iamrk1811/real-time-chat/internal/services"
 )
 
@@ -35,7 +36,7 @@ func (r *Routes) NewRouter(config *config.Config) http.Handler {
 	NewClientRoutes(api, r.Services.Client, config)
 
 	ws := router.PathPrefix("/ws").Subrouter()
-	_ = ws
+	clientWSRoutes.NewClientWebSocketRoutes(ws, r.Services.Client, config)
 
 	// api.Handle("/test", middleware.UserProtectionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	// 	fmt.Println("hello")

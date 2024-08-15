@@ -21,4 +21,5 @@ func NewAuthRoutes(router *mux.Router, service services.Auth) *authRoutes {
 
 func (route *authRoutes) handleLogin(w http.ResponseWriter, r *http.Request) {
 	route.service.Login(w, r)
+
 }
