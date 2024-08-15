@@ -24,9 +24,9 @@ func (c *CRUDRepo) SaveSession(ctx context.Context, sessionID string, user *type
 }
 
 func (c *CRUDRepo) FetchUserBySessionID(ctx context.Context, sessionID string) *types.Session {
-	query := `SELECT u.user_id, session_id, s.created_at, s.expires_at FROM sessions AS s LEFT JOIN users AS u ON s.user_id=u.user_id WHERE s.session_id=$1;`
+	query := `SELECT u.user_id, u.username, session_id, s.created_at, s.expires_at FROM sessions AS s LEFT JOIN users AS u ON s.user_id=u.user_id WHERE s.session_id=$1;`
 	var session types.Session
-	if err := c.DB.QueryRowContext(ctx, query, sessionID).Scan(&session.UserID, &session.SessionID, &session.CreatedAt, &session.ExpiresAt); err != nil {
+	if err := c.DB.QueryRowContext(ctx, query, sessionID).Scan(&session.UserID, &session.UserName, &session.SessionID, &session.CreatedAt, &session.ExpiresAt); err != nil {
 		return nil
 	}
 	return &session

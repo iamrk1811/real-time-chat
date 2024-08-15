@@ -65,7 +65,7 @@ func (c *client) Chat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *client) handleConn(conn *websocket.Conn, session *types.Session) {
-	c.conns[session.UserID] = conn
+	c.conns[session.UserName] = conn
 
 	go c.readMessages(conn, session)
 }
