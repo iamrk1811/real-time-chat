@@ -30,7 +30,8 @@ var upgrader = websocket.Upgrader{
 }
 
 type client struct {
-	repo   repo.CRUDRepo
+	repo repo.CRUDRepo
+	// contains active websocket coonection
 	conns  ClientConnectionMap
 	config config.Config
 }
@@ -43,6 +44,7 @@ type getChatsPayload struct {
 type chatPayload struct {
 	To      string `json:"to"`
 	Content string `json:"content"`
+	GroupID int    `json:"group_id"`
 }
 
 func NewClientService(repo repo.CRUDRepo, confg config.Config) *client {
@@ -74,9 +76,7 @@ func (c *client) closeAndDelete(conn *websocket.Conn, key string) {
 	delete(c.conns, key)
 }
 
-func (c *client) handleConn(conn *websocket.Conn, session *types.Session) {
-	c.conns[session.UserName] = conn
-
+func (c *client) handlePingPong(conn *websocket.Conn, session *types.Session) {
 	// setting pong handler
 	conn.SetPongHandler(func(data string) error {
 		return nil
@@ -93,6 +93,12 @@ func (c *client) handleConn(conn *websocket.Conn, session *types.Session) {
 			}
 		}
 	}()
+}
+
+func (c *client) handleConn(conn *websocket.Conn, session *types.Session) {
+	c.conns[session.UserName] = conn
+
+	c.handlePingPong(conn, session)
 
 	go c.readMessages(conn, session)
 }
@@ -117,17 +123,39 @@ func (c *client) readMessages(conn *websocket.Conn, session *types.Session) {
 		if err := json.Unmarshal(p, &payload); err != nil {
 			continue
 		}
-		go c.repo.SaveMessage(session.UserID, payload.To, payload.Content)
+		go c.repo.SaveMessage(session.UserID, payload.To, payload.GroupID, payload.Content)
 
-		// does user have active connection
-		receiverConn, exist := c.conns[payload.To]
+		if payload.To != "" {
+			// user to user message
+			go c.sendToUserMessage(payload.To, messageType, p)
+		} else {
+			// user to group
+			go c.sendGroupMessage(conn, payload.GroupID, messageType, p)
+		}
+	}
+}
+
+func (c *client) sendToUserMessage(to string, messageType int, p []byte) {
+	// does user have active connection
+	receiverConn, exist := c.conns[to]
+	if !exist {
+		return
+	}
+	receiverConn.WriteMessage(messageType, p)
+}
+
+func (c *client) sendGroupMessage(senderConn *websocket.Conn, groupID int, messageType int, p []byte) {
+	groupUsers, err := c.repo.GetUsersFromUsingGroupID(groupID)
+	if err != nil {
+		senderConn.WriteMessage(websocket.TextMessage, []byte(config.MessageFailed))
+		return
+	}
+	for _, u := range groupUsers {
+		receiverConn, exist := c.conns[u.Username]
 		if !exist {
 			continue
 		}
-
-		if err := receiverConn.WriteMessage(messageType, p); err != nil {
-			continue
-		}
+		receiverConn.WriteMessage(messageType, p)
 	}
 }
 

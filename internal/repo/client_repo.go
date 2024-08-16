@@ -6,9 +6,9 @@ import (
 	"github.com/iamrk1811/real-time-chat/types"
 )
 
-func (c *CRUDRepo) SaveMessage(sender, receiver, content string) {
+func (c *CRUDRepo) SaveMessage(sender, receiver string, groupID int, content string) {
 	ctx := context.Background()
-	query := `INSERT INTO messages (sender_id, receiver_id, content) VALUES($1, $2, $3)`
+	query := `INSERT INTO messages (sender_id, receiver_id, group_id, content) VALUES($1, $2, $3, $4)`
 
 	c.DB.ExecContext(ctx, query, sender, receiver, content)
 }
@@ -38,4 +38,9 @@ func (c *CRUDRepo) GetChats(ctx context.Context, from, to string) ([]types.Messa
 
 func (c *CRUDRepo) GetGroupChats(group string) {
 
+}
+
+func (c *CRUDRepo) GetUsersFromUsingGroupID(groupID int) ([]types.User, error) {
+	var users []types.User
+	return users, nil
 }
