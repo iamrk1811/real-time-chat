@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/iamrk1811/real-time-chat/config"
@@ -60,28 +61,65 @@ func (c *client) Chat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	session := r.Context().Value(config.SessionKey).(*types.Session)
+	if session.IsExpired() {
+		conn.Close()
+		return
+	}
 
 	go c.handleConn(conn, session)
 }
 
+func (c *client) closeAndDelete(conn *websocket.Conn, key string) {
+	conn.Close()
+	delete(c.conns, key)
+}
+
 func (c *client) handleConn(conn *websocket.Conn, session *types.Session) {
 	c.conns[session.UserName] = conn
+
+	// setting pong handler
+	conn.SetPongHandler(func(data string) error {
+		return nil
+	})
+
+	// each 5 send server will send a ping
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				c.closeAndDelete(conn, session.UserName)
+				return
+			}
+		}
+	}()
 
 	go c.readMessages(conn, session)
 }
 
 func (c *client) readMessages(conn *websocket.Conn, session *types.Session) {
 	for {
+		if session.IsExpired() {
+			c.closeAndDelete(conn, session.UserName)
+			return
+		}
+
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			continue
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				break
+			}
+			c.closeAndDelete(conn, session.UserName)
+			break
 		}
+
 		var payload chatPayload
 		if err := json.Unmarshal(p, &payload); err != nil {
 			continue
 		}
 		go c.repo.SaveMessage(session.UserID, payload.To, payload.Content)
-		// does user have a active connection
+
+		// does user have active connection
 		receiverConn, exist := c.conns[payload.To]
 		if !exist {
 			continue
