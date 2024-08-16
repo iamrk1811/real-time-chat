@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/iamrk1811/real-time-chat/types"
 )
@@ -37,8 +36,39 @@ func (c *CRUDRepo) GetChats(ctx context.Context, from, to string) ([]types.Messa
 	return messages, mErr
 }
 
-func (c *CRUDRepo) GetGroupChats(group string) {
+func (c *CRUDRepo) GetGroupChats(ctx context.Context, sender string, groupID int) ([]types.Message, types.MultiError) {
+	var messages []types.Message
+	var mErr types.MultiError
+	query := `
+	SELECT m.sender_id, m.content, m.sent_at
+	FROM messages m
+	JOIN UserGroups ug ON ug.group_id = m.group_id
+	WHERE m.group_id = $1
+	AND m.sender_id = $2
+	AND EXISTS (
+		SELECT 1
+		FROM UserGroups ug2
+		WHERE ug2.user_id = m.sender_id
+		AND ug2.group_id = m.group_id
+	)
+	`
+	rows, err := c.DB.QueryContext(ctx, query, groupID, sender)
+	if err != nil {
+		mErr.Add(err)
+		return nil, mErr
+	}
 
+	for rows.Next() {
+		var row types.Message
+
+		err := rows.Scan(&row.From, &row.To, &row.Content, &row.SentAt)
+		if err != nil {
+			mErr.Add(err)
+			continue
+		}
+		messages = append(messages, row)
+	}
+	return messages, mErr
 }
 
 func (c *CRUDRepo) GetUsersFromUsingGroupID(groupID int, senderUserID string) ([]types.User, error) {

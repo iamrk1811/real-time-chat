@@ -42,7 +42,7 @@ type getChatsPayload struct {
 }
 
 type getGroupChatsPayload struct {
-	GroupID string `json:"group_id"`
+	GroupID int `json:"group_id"`
 }
 
 type chatPayload struct {
@@ -151,7 +151,6 @@ func (c *client) sendToUserMessage(to string, messageType int, p []byte) {
 func (c *client) sendGroupMessage(senderConn *websocket.Conn, session *types.Session, groupID int, messageType int, p []byte) {
 	groupUsers, err := c.repo.GetUsersFromUsingGroupID(groupID, session.UserID)
 	if err != nil {
-		fmt.Println("ERR", err)
 		senderConn.WriteMessage(websocket.TextMessage, []byte(config.MessageFailed))
 		return
 	}
@@ -165,6 +164,10 @@ func (c *client) sendGroupMessage(senderConn *websocket.Conn, session *types.Ses
 }
 
 func (c *client) GetChats(w http.ResponseWriter, r *http.Request) {
+	session := r.Context().Value(config.SessionKey).(*types.Session)
+	if session.IsExpired() {
+		return
+	}
 	var payload getChatsPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, nil, err)
@@ -181,5 +184,22 @@ func (c *client) GetChats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *client) GetGroupChats(w http.ResponseWriter, r *http.Request) {
+	session := r.Context().Value(config.SessionKey).(*types.Session)
+	if session.IsExpired() {
+		return
+	}
 
+	var payload getGroupChatsPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, nil, err)
+		return
+	}
+
+	chats, mErr := c.repo.GetGroupChats(r.Context(), session.UserID, payload.GroupID)
+	if mErr.HasError() {
+		utils.WriteResponse(w, http.StatusInternalServerError, nil, &mErr)
+		return
+	}
+
+	utils.WriteResponse(w, http.StatusOK, chats, nil)
 }
