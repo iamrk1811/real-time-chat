@@ -41,6 +41,10 @@ type getChatsPayload struct {
 	To   string `json:"to"`
 }
 
+type getGroupChatsPayload struct {
+	GroupID string `json:"group_id"`
+}
+
 type chatPayload struct {
 	To      string `json:"to"`
 	Content string `json:"content"`
@@ -130,7 +134,7 @@ func (c *client) readMessages(conn *websocket.Conn, session *types.Session) {
 			go c.sendToUserMessage(payload.To, messageType, p)
 		} else {
 			// user to group
-			go c.sendGroupMessage(conn, payload.GroupID, messageType, p)
+			go c.sendGroupMessage(conn, session, payload.GroupID, messageType, p)
 		}
 	}
 }
@@ -144,9 +148,10 @@ func (c *client) sendToUserMessage(to string, messageType int, p []byte) {
 	receiverConn.WriteMessage(messageType, p)
 }
 
-func (c *client) sendGroupMessage(senderConn *websocket.Conn, groupID int, messageType int, p []byte) {
-	groupUsers, err := c.repo.GetUsersFromUsingGroupID(groupID)
+func (c *client) sendGroupMessage(senderConn *websocket.Conn, session *types.Session, groupID int, messageType int, p []byte) {
+	groupUsers, err := c.repo.GetUsersFromUsingGroupID(groupID, session.UserID)
 	if err != nil {
+		fmt.Println("ERR", err)
 		senderConn.WriteMessage(websocket.TextMessage, []byte(config.MessageFailed))
 		return
 	}
