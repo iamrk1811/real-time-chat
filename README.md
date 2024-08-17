@@ -16,6 +16,7 @@ This project is a real-time chat application built using Go (Golang) and `https:
 ### Config
 1. Create a `config.yaml` file in the root of the project DIR, you can find an example in `config.yaml.example`
 2. Setup the config accordingly
+3. Execute `database.sql` to create necessary tables
 
 ### Run
 ```
