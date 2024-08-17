@@ -1,0 +1,8 @@
+SITE:
+  TITLE: "Real Time Chat"
+  PORT: ":8000"
+  HTTP_READ_TIMEOUT: 10
+  HTTP_WRITE_TIMEOUT: 30
+  
+DB:
+  CONN_URL: "postgresql://postgres:password@127.0.0.1:5433/real_time_chat?sslmode=disable"
