@@ -5,12 +5,12 @@ import "time"
 type User struct {
 	Username string
 	Password string
-	UserID   string
+	UserID   int
 }
 
 type Session struct {
 	SessionID string    `json:"session_id"`
-	UserID    string    `json:"user_id"`
+	UserID    int       `json:"user_id"`
 	UserName  string    `json:"username"`
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt time.Time `json:"expires_at"`

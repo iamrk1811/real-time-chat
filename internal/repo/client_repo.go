@@ -6,14 +6,18 @@ import (
 	"github.com/iamrk1811/real-time-chat/types"
 )
 
-func (c *CRUDRepo) SaveMessage(sender, receiver string, groupID int, content string) {
+func (c *CRUDRepo) SaveMessage(sender, receiver int, groupID int, content string) {
 	ctx := context.Background()
-	query := `INSERT INTO messages (sender_id, receiver_id, group_id, content) VALUES($1, $2, $3, $4)`
-
-	c.DB.ExecContext(ctx, query, sender, receiver, groupID, content)
+	if receiver != 0 {
+		query := `INSERT INTO messages (sender_id, receiver_id, content) VALUES($1, $2, $3)`
+		c.DB.ExecContext(ctx, query, sender, receiver, content)
+	} else {
+		query := `INSERT INTO messages (sender_id, group_id, content) VALUES($1, $2, $3)`
+		c.DB.ExecContext(ctx, query, sender, groupID, content)
+	}
 }
 
-func (c *CRUDRepo) GetChats(ctx context.Context, from, to string) ([]types.Message, types.MultiError) {
+func (c *CRUDRepo) GetChats(ctx context.Context, from, to int) ([]types.Message, types.MultiError) {
 	var messages []types.Message
 	var mErr types.MultiError
 	query := `SELECT sender_id, receiver_id, content, sent_at FROM messages WHERE sender_id=$1 AND receiver_id=$2`
@@ -36,7 +40,7 @@ func (c *CRUDRepo) GetChats(ctx context.Context, from, to string) ([]types.Messa
 	return messages, mErr
 }
 
-func (c *CRUDRepo) GetGroupChats(ctx context.Context, sender string, groupID int) ([]types.Message, types.MultiError) {
+func (c *CRUDRepo) GetGroupChats(ctx context.Context, sender, groupID int) ([]types.Message, types.MultiError) {
 	var messages []types.Message
 	var mErr types.MultiError
 	query := `
@@ -71,7 +75,7 @@ func (c *CRUDRepo) GetGroupChats(ctx context.Context, sender string, groupID int
 	return messages, mErr
 }
 
-func (c *CRUDRepo) GetUsersFromUsingGroupID(groupID int, senderUserID string) ([]types.User, error) {
+func (c *CRUDRepo) GetUsersFromUsingGroupID(groupID int, senderUserID int) ([]types.User, error) {
 	ctx := context.Background()
 	var users []types.User
 	query := `
